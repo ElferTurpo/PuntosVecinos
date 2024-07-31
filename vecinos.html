@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K Vecinos Cercanos</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        table {
+            margin-top: 20px;
+            border-collapse: collapse;
+            width: 50%;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <input type="number" id="k-value" placeholder="Número de vecinos" min="1" value="1">
+    <button id="find-nearest">Encontrar vecinos más cercanos</button>
+    <table id="distance-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Coordenadas del vecino</th>
+                <th>Distancia</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const points = [];
+        const numPoints = 80;
+        let selectedPoint = null;
+
+        // Generar puntos aleatorios
+        for (let i = 0; i < numPoints; i++) {
+            points.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height
+            });
+        }
+
+        // Dibujar puntos en el canvas
+        function drawPoints() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            points.forEach((point, index) => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+                ctx.closePath();
+
+                // Mostrar número de orden al costado del punto
+                ctx.font = '10px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'left';
+                ctx.fillText(index + 1, point.x + 6, point.y + 3); // Desplazar el texto a la derecha del punto
+            });
+        }
+
+        // Encontrar los k puntos más cercanos
+        function findKClosestPoints(x, y, k) {
+            return points.map((point, index) => ({
+                index: index + 1,
+                point: point,
+                distance: Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2)
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, k);
+        }
+
+        // Manejar clic en el canvas
+        canvas.addEventListener('click', event => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            selectedPoint = { x, y };
+
+            drawPoints();
+
+            // Dibujar el punto seleccionado
+            ctx.beginPath();
+            ctx.arc(x, y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'green';
+            ctx.fill();
+            ctx.closePath();
+        });
+
+        // Manejar clic en el botón
+        document.getElementById('find-nearest').addEventListener('click', () => {
+            const k = parseInt(document.getElementById('k-value').value);
+            if (selectedPoint && k > 0) {
+                const kClosestPoints = findKClosestPoints(selectedPoint.x, selectedPoint.y, k);
+                drawPoints();
+
+                // Dibujar el punto seleccionado
+                ctx.beginPath();
+                ctx.arc(selectedPoint.x, selectedPoint.y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = 'green';
+                ctx.fill();
+                ctx.closePath();
+
+                // Dibujar los k puntos más cercanos y líneas
+                kClosestPoints.forEach((entry, index) => {
+                    const point = entry.point;
+                    const distance = entry.distance;
+                    const pointIndex = entry.index;
+
+                    // Dibujar el punto más cercano
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'red';
+                    ctx.fill();
+                    ctx.closePath();
+
+                    // Dibujar la línea al punto más cercano
+                    ctx.beginPath();
+                    ctx.moveTo(selectedPoint.x, selectedPoint.y);
+                    ctx.lineTo(point.x, point.y);
+                    ctx.strokeStyle = 'black';
+                    ctx.stroke();
+                    ctx.closePath();
+                });
+
+                // Mostrar distancias en la tabla
+                const tableBody = document.getElementById('distance-table').querySelector('tbody');
+                tableBody.innerHTML = ''; // Limpiar la tabla
+
+                kClosestPoints.forEach((entry, index) => {
+                    const point = entry.point;
+                    const distance = entry.distance;
+                    const pointIndex = entry.index;
+
+                    const row = document.createElement('tr');
+                    const cellIndex = document.createElement('td');
+                    cellIndex.textContent = pointIndex;
+                    const cellCoords = document.createElement('td');
+                    cellCoords.textContent = `(${point.x.toFixed(2)}, ${point.y.toFixed(2)})`;
+                    const cellDistance = document.createElement('td');
+                    cellDistance.textContent = distance.toFixed(1);  // Mostrar la distancia con un decimal
+
+                    row.appendChild(cellIndex);
+                    row.appendChild(cellCoords);
+                    row.appendChild(cellDistance);
+                    tableBody.appendChild(row);
+                });
+            }
+        });
+
+        // Dibujar los puntos al cargar la página
+        drawPoints();
+    </script>
+</body>
+</html>
